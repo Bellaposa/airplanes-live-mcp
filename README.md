@@ -1,37 +1,147 @@
-# Airplane Tracker MCP Server - Implementation Guide
+# ✈️ Airplane Tracker MCP Server
 
-## Overview
+![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+![MCP](https://img.shields.io/badge/MCP-v1.17.0-orange.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![API](https://img.shields.io/badge/API-airplanes.live-red.svg)
 
-This MCP server integrates with the airplanes.live API to provide real-time aircraft tracking capabilities to Claude Desktop. It's designed to be simple, efficient, and easy to extend.
+![Airplane Tracker Banner](./images/airplane-banner.png)
 
-## Architecture
+## 🎯 Overview
 
-### Components
+This MCP server integrates with the **airplanes.live API** to provide real-time aircraft tracking capabilities to Claude Desktop. Track flights, find aircraft by callsign, registration, or position - all directly from Claude!
 
-1. **Docker Container** - Runs the Python MCP server
-2. **FastMCP Framework** - Lightweight MCP server implementation
-3. **httpx Client** - Async HTTP client for API calls
-4. **Format Functions** - Clean data presentation
+## ⚠️ Important Notice - Terms of Use
 
-### Data Flow
+> **📖 Educational and Non-Commercial Use Only**
+> 
+> This project uses the [airplanes.live API](https://airplanes.live/api-guide/) which is provided for **educational and non-commercial purposes only**. Please respect their terms of service.
+>
+> ### 📋 Usage Guidelines:
+> - ✅ **Educational projects** - Learning and research
+> - ✅ **Personal use** - Non-commercial tracking
+> - ✅ **Open source contributions** - Community development
+> - ❌ **Commercial applications** - Business/profit purposes
+> - ❌ **High-volume requests** - Respect rate limits
+>
+> ### 🛡️ Disclaimer:
+> **The author of this MCP server does not assume any responsibility for the use of this software.** This is a community contribution intended for educational purposes and to demonstrate MCP server development. Users are responsible for complying with airplanes.live API terms and any applicable regulations.
+>
+> 📖 **Full API Terms**: https://airplanes.live/api-guide/
 
+## 📸 Screenshots
+
+<div align="center">
+
+![Claude Desktop with Airplane Tracker](./images/claude-screenshot.png)
+*Real-time airplane tracking in Claude Desktop*
+
+</div>
+
+### 🚀 Features
+
+- 🔍 **Search by Callsign** - Find specific flights (e.g., UAL123)
+- 📋 **Registration Lookup** - Track by tail number (e.g., N12345)
+- 🎯 **Position-based Search** - Aircraft near coordinates
+- 🏷️ **Hex ID Search** - Mode S transponder codes
+- 🛡️ **Military Aircraft** - Tracked military flights
+- 🚁 **LADD Aircraft** - Law enforcement tracking
+- ⭐ **PIA Aircraft** - Private/Interesting aircraft
+- 📡 **Squawk Codes** - Emergency and special codes
+
+
+*Various API search examples*
+
+## 🏗️ Architecture
+
+### 🔧 Components
+
+- 🐍 **Python MCP Server** - Async server implementation
+- 🌐 **MCP Framework** - Modern server architecture  
+- ⚡ **httpx Client** - High-performance HTTP requests
+- 📊 **Data Formatter** - Clean, readable aircraft information
+- 🔌 **Claude Integration** - Direct MCP protocol support
+
+### 📊 Data Flow
+
+```mermaid
+graph TD
+    A[Claude Desktop] --> B[MCP Protocol]
+    B --> C[airplane_server.py]
+    C --> D[API Functions]
+    D --> E[airplanes.live API]
+    E --> F[Aircraft Data]
+    F --> G[Formatted Response]
+    G --> A
 ```
-Claude Desktop Input
-    ↓
-MCP Gateway (stdio transport)
-    ↓
-airplane_server.py (FastMCP)
-    ↓
-Tool Function (async)
-    ↓
-API Request (httpx AsyncClient)
-    ↓
-airplanes.live API
-    ↓
-JSON Response → Format → Return String → Claude Desktop
+
+*System architecture and data flow*
+
+## 🚀 Quick Start
+
+### 📋 Prerequisites
+
+- 🐍 Python 3.8+
+- 💻 Claude Desktop
+- 🌐 Internet connection
+
+### ⚡ Installation
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Bellaposa/airplanes-live-mcp.git
+cd airplanes-live-mcp
+
+# 2. Create virtual environment
+python -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Test the server
+python airplane_server.py
 ```
 
-## Key Design Decisions
+### ⚙️ Claude Desktop Configuration
+
+Add to `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "/path/to/airplanes-live-mcp/.venv/bin/python",
+      "args": ["/path/to/airplanes-live-mcp/airplane_server.py"],
+      "env": {
+        "PYTHONPATH": "/path/to/airplanes-live-mcp"
+      }
+    }
+  }
+}
+```
+
+
+*Claude Desktop configuration*
+
+## 🎮 Usage Examples
+
+### Search by Callsign
+```
+🔍 Find flight UAL123
+```
+
+### Near Position Search  
+```
+📍 Show aircraft near 40.7128, -74.0060 within 50nm
+```
+
+### Military Aircraft
+```
+🛡️ Show all military aircraft
+```
+
+## 🔧 Key Design Decisions
 
 ### 1. Async Implementation
 
@@ -409,10 +519,39 @@ Possible improvements:
 - Consider caching to reduce API calls
 - Add input sanitization for custom endpoints
 
-## Resources
+## 📚 Resources
 
 - **API Documentation**: https://airplanes.live/
+- **API Terms of Use**: https://airplanes.live/api-guide/
 - **MCP Specification**: https://docs.anthropic.com/mcp
 - **FastMCP Documentation**: https://github.com/jlowin/fastmcp
 - **httpx Documentation**: https://www.python-httpx.org/
-- **Docker Documentation**: https://docs.docker.com/
+
+## 🤝 Contributing
+
+This is an open-source educational project! Contributions are welcome:
+
+- 🐛 **Bug Reports** - Open an issue
+- 💡 **Feature Requests** - Suggest improvements  
+- 🔧 **Pull Requests** - Submit code changes
+- 📖 **Documentation** - Improve guides and examples
+
+## 📄 License & Disclaimer
+
+**MIT License** - Feel free to use, modify, and distribute for educational purposes.
+
+### ⚖️ Legal Notice:
+- This software is provided "AS IS" without warranty
+- Author assumes no responsibility for usage or compliance
+- Users must respect airplanes.live API terms
+- Educational and non-commercial use only
+- Not affiliated with airplanes.live
+
+### 🎯 Project Intent:
+This project is a **community contribution** for educational purposes, demonstrating MCP server development and API integration. The goal is to help developers learn and contribute to the MCP ecosystem, not for commercial gain.
+
+---
+
+**Made with ❤️ for the MCP community** ✈️
+
+*Remember: Always respect API terms and use responsibly!*
