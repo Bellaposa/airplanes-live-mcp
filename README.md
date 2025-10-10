@@ -27,7 +27,11 @@ This MCP server integrates with the **airplanes.live API** to provide real-time 
 > ### 🛡️ Disclaimer:
 > **The author of this MCP server does not assume any responsibility for the use of this software.** This is a community contribution intended for educational purposes and to demonstrate MCP server development. Users are responsible for complying with airplanes.live API terms and any applicable regulations.
 >
-> 📖 **Full API Terms**: https://airplanes.live/api-guide/
+> ### 🌐 Respect for Existing Services:
+> **This project does NOT intend to replace or compete with the official [airplanes.live globe viewer](https://globe.airplanes.live).** The official globe is the primary and recommended way to visualize flight data. This MCP server is designed as a complementary educational tool for Claude Desktop integration and MCP development learning.
+>
+> 📖 **Full API Terms**: https://airplanes.live/api-guide/  
+> 🌍 **Official Globe Viewer**: https://globe.airplanes.live
 
 ## 📸 Screenshots
 
@@ -491,23 +495,31 @@ sudo usermod -aG docker $USER
 newgrp docker
 ```
 
-## Future Enhancements
+## 🗺️ Future Enhancements
 
-Possible improvements:
+> **⚠️ Important Note**: This planned dashboard is intended as an **educational complement** to the excellent official [airplanes.live globe viewer](https://globe.airplanes.live), not a replacement. The goal is to demonstrate web development integration with MCP servers for learning purposes.
 
-1. **Caching** - Cache results to reduce API calls
-2. **Filtering** - Add pre/post-query filtering options
-3. **Export** - Save results as JSON/CSV
-4. **Alerts** - Notify when specific aircraft appear
-5. **Historical** - Track aircraft movements over time
-6. **Predictions** - Estimate flight paths
-7. **Statistics** - Aggregate data and analytics
+- [ ] **Caching System** - Redis cache to reduce API calls
+- [ ] **Rate Limiting** - Smart request throttling
+- [ ] **Export Features** - Save results as JSON/CSV/KML
+- [ ] **Enhanced Formatting** - Better data visualization in Claude
+- [ ] **Flight Alerts** - Notify when specific aircraft appear
+- [ ] **Historical Tracking** - Store and track aircraft movements
+- [ ] **Statistics Dashboard** - Aggregate data and analytics
+- [ ] **API Extensions** - Additional airplanes.live endpoints
+
+#### 🤖 **AI-Powered Features**
+- 🧠 **Flight Prediction** - ML-based flight path estimation
+- 📈 **Pattern Analysis** - Identify unusual flight patterns  
+- 🚨 **Anomaly Detection** - Automated alerts for interesting events
+- 📊 **Trend Analysis** - Historical data insights
 
 ## Security
 
 ### Current Approach
 
 - No authentication required (public API data)
+- Consider applying for an API key for production use
 - No sensitive credentials stored
 - Runs as non-root user
 - Input validation on all parameters
