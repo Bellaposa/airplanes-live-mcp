@@ -109,7 +109,9 @@ python airplane_server.py
 
 ### ⚙️ Claude Desktop Configuration
 
-Add to `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
+#### 🍎 **macOS/Linux Configuration**
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `~/.config/claude-desktop/config.json` (Linux):
 
 ```json
 {
@@ -124,6 +126,30 @@ Add to `~/Library/Application\ Support/Claude/claude_desktop_config.json`:
   }
 }
 ```
+
+#### 🪟 **Windows Configuration**
+
+Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "C:\\Users\\YourUsername\\airplanes-live-mcp\\.venv\\Scripts\\python.exe",
+      "args": ["C:\\Users\\YourUsername\\airplanes-live-mcp\\airplane_server.py"],
+      "env": {
+        "PYTHONPATH": "C:\\Users\\YourUsername\\airplanes-live-mcp"
+      }
+    }
+  }
+}
+```
+
+**⚠️ Important Windows Notes:**
+- Use `Scripts\\python.exe` (not `bin/python`)
+- Replace `YourUsername` with your actual Windows username
+- Use double backslashes `\\` in paths
+- Make sure the virtual environment is created with `python -m venv .venv`
 
 
 *Claude Desktop configuration*
