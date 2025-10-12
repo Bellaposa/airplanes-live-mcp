@@ -96,15 +96,274 @@ graph TD
 git clone https://github.com/Bellaposa/airplanes-live-mcp.git
 cd airplanes-live-mcp
 
-# 2. Create virtual environment
+# 2. Create virtual environment (REQUIRED!)
 python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# 3. Install dependencies
+# 3. Activate virtual environment
+# macOS/Linux:
+source .venv/bin/activate
+# Windows:
+.venv\Scripts\activate
+
+# 4. Install dependencies
 pip install -r requirements.txt
 
-# 4. Test the server
+# 5. Test the server
 python airplane_server.py
+```
+
+#### ⚠️ **Common Issues & Solutions**
+
+**🔥 Virtual Environment is MANDATORY!**
+- If you skip step 2-3, you'll get `ModuleNotFoundError: No module named 'httpx'`
+- Claude Desktop needs the **full path** to the venv Python, not system Python
+- Without venv, dependencies aren't isolated and things break
+
+**🪟 Windows Users:**
+- Virtual env creates `.venv\Scripts\` folder (not `.venv\bin\`)
+- Use `Scripts\python.exe` in Claude config, not `bin/python`
+- Always use double backslashes `\\` in JSON paths
+
+**🐍 Python Path Issues:**
+- Make sure Python 3.8+ is installed: `python --version`
+- If `python` doesn't work, try `python3` or `py`
+- Virtual environment MUST exist before configuring Claude Desktop
+
+## 🐳 Docker Installation (Alternative)
+
+**Skip Python setup headaches - use Docker instead!**
+
+### 📋 Prerequisites
+
+- 🐳 Docker Desktop installed and running
+- 💻 Claude Desktop
+
+### ⚡ Docker Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/Bellaposa/airplanes-live-mcp.git
+cd airplanes-live-mcp
+
+# 2. Build Docker image
+docker build -t airplane-mcp-server .
+
+# 3. Test the container
+docker run --rm -it airplane-mcp-server python airplane_server.py
+```
+
+### ⚙️ Claude Desktop Configuration for Docker
+
+#### 🍎 **macOS/Linux with Docker**
+
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i", 
+        "airplane-mcp-server", 
+        "python", "airplane_server.py"
+      ]
+    }
+  }
+}
+```
+
+#### 🪟 **Windows with Docker**
+
+Add to `%APPDATA%\Claude\claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i", 
+        "airplane-mcp-server", 
+        "python", "airplane_server.py"
+      ]
+    }
+  }
+}
+```
+
+### 🔄 Docker Commands Reference
+
+```bash
+# Build the image
+docker build -t airplane-mcp-server .
+
+# Run interactively for testing
+docker run --rm -it airplane-mcp-server bash
+
+# Check if image exists
+docker images | grep airplane-mcp-server
+
+# Remove image if needed
+docker rmi airplane-mcp-server
+
+# View container logs (if running detached)
+docker logs <container_id>
+```
+
+### ✅ **Docker Advantages**
+
+- 🚀 **No Python setup required** - Everything pre-configured
+- 🔒 **Isolated environment** - No dependency conflicts
+- 🌍 **Works everywhere** - Same setup on Windows/Mac/Linux  
+- 📦 **Easy updates** - Just rebuild the image
+- 🛡️ **Consistent behavior** - Eliminates "works on my machine"
+
+### ⚠️ **Docker Troubleshooting**
+
+**Problem: "docker: command not found"**
+```bash
+# Install Docker Desktop first
+# macOS: https://docs.docker.com/desktop/install/mac-install/
+# Windows: https://docs.docker.com/desktop/install/windows-install/
+# Linux: https://docs.docker.com/desktop/install/linux-install/
+```
+
+**Problem: "Cannot connect to Docker daemon"**
+```bash
+# Start Docker Desktop application
+# Wait for Docker to fully start (green icon)
+```
+
+**Problem: "Permission denied" (Linux)**
+```bash
+# Add user to docker group
+sudo usermod -aG docker $USER
+# Log out and back in, or:
+newgrp docker
+```
+
+**Problem: Image build fails**
+```bash
+# Clean Docker cache
+docker system prune -a
+# Try building again
+docker build --no-cache -t airplane-mcp-server .
+```
+
+### 🎯 **Even Easier: Docker Compose**
+
+For the simplest setup, use Docker Compose:
+
+```bash
+# 1. Clone and enter directory
+git clone https://github.com/Bellaposa/airplanes-live-mcp.git
+cd airplanes-live-mcp
+
+# 2. Build and run with one command
+docker-compose up --build
+
+# 3. In another terminal, test the server
+docker-compose exec airplane-mcp-server python airplane_server.py
+```
+
+**Docker Compose Claude Configuration:**
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "docker-compose", 
+      "args": [
+        "-f", "/path/to/airplanes-live-mcp/docker-compose.yml",
+        "exec", "-T", "airplane-mcp-server", 
+        "python", "airplane_server.py"
+      ],
+      "cwd": "/path/to/airplanes-live-mcp"
+    }
+  }
+}
+```
+
+### 🐳 **How to Use with Claude Desktop**
+
+#### **Method 1: Simple Docker Run**
+
+**Configuration for all platforms:**
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "docker",
+      "args": [
+        "run", "--rm", "-i", 
+        "airplane-mcp-server", 
+        "python", "airplane_server.py"
+      ]
+    }
+  }
+}
+```
+
+#### **Method 2: Docker Compose (Advanced)**
+
+**Configuration with full paths:**
+
+```json
+{
+  "mcpServers": {
+    "airplanes-live": {
+      "command": "docker-compose",
+      "args": [
+        "-f", "/full/path/to/your/airplanes-live-mcp/docker-compose.yml",
+        "exec", "-T", "airplane-mcp-server", 
+        "python", "airplane_server.py"
+      ],
+      "cwd": "/full/path/to/your/airplanes-live-mcp"
+    }
+  }
+}
+```
+
+#### **Complete Docker Setup Steps:**
+
+```bash
+# 1. Clone and build
+git clone https://github.com/Bellaposa/airplanes-live-mcp.git
+cd airplanes-live-mcp
+docker build -t airplane-mcp-server .
+
+# 2. Configure Claude Desktop with Method 1 (above)
+
+# 3. Restart Claude Desktop completely
+
+# 4. Test with: "Show me aircraft near New York"
+```
+
+#### **🎯 Docker vs Python Comparison:**
+
+| Method | Pros | Cons | Best For |
+|--------|------|------|----------|
+| **Docker** | ✅ No Python setup<br>✅ Works everywhere<br>✅ Isolated | ❌ Requires Docker<br>❌ Slight overhead | Beginners, Windows users |
+| **Python** | ✅ Direct execution<br>✅ Easy debugging<br>✅ No Docker needed | ❌ Manual Python setup<br>❌ OS-specific issues | Developers, experienced users |
+
+**Docker Compose Commands:**
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# View logs
+docker-compose logs airplane-mcp-server
+
+# Stop services
+docker-compose down
+
+# Rebuild and restart
+docker-compose up --build
+```
+
 ```
 
 ### ⚙️ Claude Desktop Configuration

@@ -1,0 +1,20 @@
+services:
+  airplane-mcp-server:
+    build: .
+    container_name: airplane-mcp-server
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
+    environment:
+      - PYTHONUNBUFFERED=1
+    # Uncomment for debugging
+    # ports:
+    #   - "8080:8080"
+    
+  # Optional: Add a simple health check service
+  healthcheck:
+    build: .
+    container_name: airplane-mcp-healthcheck
+    command: python -c "import airplane_server; print('✅ Server can import successfully')"
+    depends_on:
+      - airplane-mcp-server
