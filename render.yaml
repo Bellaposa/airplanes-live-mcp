@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: airplanes-live-mcp
+    env: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    autoDeploy: true
+    # Set the health check path for Render
+    healthCheckPath: /healthz
+    buildCommand: ""
+    startCommand: "uvicorn http_wrapper:app --host 0.0.0.0 --port $PORT"
