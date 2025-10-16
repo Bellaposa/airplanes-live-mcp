@@ -373,6 +373,39 @@ async def get_aircraft_by_airport(airport_code: str):
     return {"error": "Airport search not available. Use /api/aircraft/near/{lat}/{lon} instead."}
 
 
+@app.get("/debug/mcp")
+async def debug_mcp():
+    """Debug endpoint per testare la comunicazione MCP"""
+    try:
+        # Test semplice - lista dei tool
+        result = await mcp_wrapper.list_tools()
+        return {"debug": "MCP communication", "result": result}
+    except Exception as e:
+        return {"error": f"Debug failed: {str(e)}"}
+
+
+@app.get("/debug/tool/{tool_name}")
+async def debug_tool_call(tool_name: str):
+    """Debug endpoint per testare una chiamata specifica"""
+    try:
+        # Test con parametri semplici
+        if tool_name == "aircraft_by_callsign":
+            arguments = {"callsign": "UAL123"}
+        elif tool_name == "military_aircraft":
+            arguments = {}
+        else:
+            arguments = {}
+            
+        result = await mcp_wrapper.call_tool(tool_name, arguments)
+        return {
+            "debug": f"Tool call: {tool_name}",
+            "arguments": arguments,
+            "result": result
+        }
+    except Exception as e:
+        return {"error": f"Debug tool call failed: {str(e)}"}
+
+
 if __name__ == "__main__":
     import uvicorn
     
