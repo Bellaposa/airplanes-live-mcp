@@ -243,21 +243,37 @@ async def search_aircraft(request: Request):
     try:
         data = await request.json()
         
-        # Determina il tipo di ricerca basato sui parametri forniti
+                # Determina il tipo di ricerca basato sui parametri forniti
         if "callsign" in data:
-            tool_name = "search_aircraft_by_callsign"
+            tool_name = "aircraft_by_callsign"
             arguments = {"callsign": data["callsign"]}
         elif "flight_number" in data:
-            tool_name = "search_aircraft_by_flight_number"
-            arguments = {"flight_number": data["flight_number"]}
+            tool_name = "aircraft_by_callsign"  # flight_number è lo stesso di callsign
+            arguments = {"callsign": data["flight_number"]}
         elif "registration" in data:
-            tool_name = "search_aircraft_by_registration"
-            arguments = {"registration": data["registration"]}
+            tool_name = "aircraft_by_registration"
+            arguments = {"reg": data["registration"]}
         elif "airport_code" in data:
-            tool_name = "search_aircraft_by_airport"
-            arguments = {"airport_code": data["airport_code"]}
+            # Non esiste un tool specifico per aeroporto, usiamo posizione
+            return {"error": "Airport search not available. Use aircraft_near_position instead."}
+        elif "hex_id" in data:
+            tool_name = "aircraft_by_hex"
+            arguments = {"hex_id": data["hex_id"]}
+        elif "icao_type" in data:
+            tool_name = "aircraft_by_type"
+            arguments = {"icao_type": data["icao_type"]}
+        elif "squawk_code" in data:
+            tool_name = "aircraft_by_squawk"
+            arguments = {"squawk_code": data["squawk_code"]}
+        elif "latitude" in data and "longitude" in data:
+            tool_name = "aircraft_near_position"
+            arguments = {
+                "latitude": str(data["latitude"]),
+                "longitude": str(data["longitude"]),
+                "radius": str(data.get("radius", "250"))
+            }
         else:
-            return {"error": "Missing required parameter. Provide one of: callsign, flight_number, registration, airport_code"}
+            return {"error": "Missing required parameter. Provide one of: callsign, flight_number, registration, hex_id, icao_type, squawk_code, or latitude+longitude"}
         
         # Chiama il tool MCP
         result = await mcp_wrapper.call_tool(tool_name, arguments)
@@ -271,7 +287,7 @@ async def search_aircraft(request: Request):
 async def get_aircraft_by_callsign(callsign: str):
     """Ricerca aeromobile per callsign - endpoint GET per n8n"""
     try:
-        result = await mcp_wrapper.call_tool("search_aircraft_by_callsign", {"callsign": callsign})
+        result = await mcp_wrapper.call_tool("aircraft_by_callsign", {"callsign": callsign})
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -281,7 +297,7 @@ async def get_aircraft_by_callsign(callsign: str):
 async def get_aircraft_by_flight(flight_number: str):
     """Ricerca aeromobile per numero di volo - endpoint GET per n8n"""
     try:
-        result = await mcp_wrapper.call_tool("search_aircraft_by_flight_number", {"flight_number": flight_number})
+        result = await mcp_wrapper.call_tool("aircraft_by_callsign", {"callsign": flight_number})
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -291,7 +307,61 @@ async def get_aircraft_by_flight(flight_number: str):
 async def get_aircraft_by_registration(registration: str):
     """Ricerca aeromobile per registrazione - endpoint GET per n8n"""
     try:
-        result = await mcp_wrapper.call_tool("search_aircraft_by_registration", {"registration": registration})
+        result = await mcp_wrapper.call_tool("aircraft_by_registration", {"reg": registration})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/hex/{hex_id}")
+async def get_aircraft_by_hex(hex_id: str):
+    """Ricerca aeromobile per hex ID - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_by_hex", {"hex_id": hex_id})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/type/{icao_type}")
+async def get_aircraft_by_type(icao_type: str):
+    """Ricerca aeromobili per tipo ICAO - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_by_type", {"icao_type": icao_type})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/squawk/{squawk_code}")
+async def get_aircraft_by_squawk(squawk_code: str):
+    """Ricerca aeromobili per codice squawk - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_by_squawk", {"squawk_code": squawk_code})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/military")
+async def get_military_aircraft():
+    """Ricerca aeromobili militari - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("military_aircraft", {})
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/near/{latitude}/{longitude}")
+async def get_aircraft_near_position(latitude: float, longitude: float, radius: int = 250):
+    """Ricerca aeromobili vicini a una posizione - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_near_position", {
+            "latitude": str(latitude),
+            "longitude": str(longitude), 
+            "radius": str(radius)
+        })
         return result
     except Exception as e:
         return {"error": str(e)}
@@ -299,12 +369,8 @@ async def get_aircraft_by_registration(registration: str):
 
 @app.get("/api/aircraft/airport/{airport_code}")
 async def get_aircraft_by_airport(airport_code: str):
-    """Ricerca aeromobili per aeroporto - endpoint GET per n8n"""
-    try:
-        result = await mcp_wrapper.call_tool("search_aircraft_by_airport", {"airport_code": airport_code})
-        return result
-    except Exception as e:
-        return {"error": str(e)}
+    """Ricerca aeromobili per aeroporto - endpoint GET per n8n (deprecato)"""
+    return {"error": "Airport search not available. Use /api/aircraft/near/{lat}/{lon} instead."}
 
 
 if __name__ == "__main__":
