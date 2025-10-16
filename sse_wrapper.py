@@ -24,6 +24,7 @@ class MCPStdioWrapper:
     def __init__(self):
         self.process = None
         self.request_id = 0
+        self.initialized = False
     
     async def start_mcp_server(self):
         """Avvia il processo del server MCP"""
@@ -44,16 +45,53 @@ class MCPStdioWrapper:
         """Invia una richiesta JSON-RPC al server MCP"""
         if not self.process or self.process.returncode is not None:
             await self.start_mcp_server()
+            self.initialized = False
+            
+        # Inizializza il server MCP se non ancora fatto
+        if not self.initialized:
+            await self.initialize()
+            self.initialized = True
         
         self.request_id += 1
         request = {
             "jsonrpc": "2.0",
             "id": self.request_id,
-            "method": method,
-            "params": params or {}
+            "method": method
         }
         
+        # Aggiungi params solo se non sono vuoti
+        if params:
+            request["params"] = params
+        
         # Invia la richiesta
+        request_json = json.dumps(request) + "\n"
+        self.process.stdin.write(request_json.encode())
+        await self.process.stdin.drain()
+        
+        # Leggi la risposta
+        response_line = await self.process.stdout.readline()
+        response = json.loads(response_line.decode())
+        
+        return response
+    
+    async def initialize(self) -> dict:
+        """Inizializza il server MCP"""
+        self.request_id += 1
+        request = {
+            "jsonrpc": "2.0",
+            "id": self.request_id,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {
+                    "name": "sse-wrapper",
+                    "version": "1.0.0"
+                }
+            }
+        }
+        
+        # Invia la richiesta di inizializzazione
         request_json = json.dumps(request) + "\n"
         self.process.stdin.write(request_json.encode())
         await self.process.stdin.drain()
