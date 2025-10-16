@@ -15,6 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the server code
 COPY airplane_server.py .
+COPY sse_wrapper.py .
 
 # Create non-root user
 RUN useradd -m -u 1000 mcpuser && \
@@ -23,5 +24,5 @@ RUN useradd -m -u 1000 mcpuser && \
 # Switch to non-root user
 USER mcpuser
 
-# Run the server
-CMD ["python", "airplane_server.py"]
+# Run the SSE wrapper server
+CMD ["python", "sse_wrapper.py"]
