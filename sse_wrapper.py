@@ -100,6 +100,16 @@ class MCPStdioWrapper:
         response_line = await self.process.stdout.readline()
         response = json.loads(response_line.decode())
         
+        # Invia il messaggio initialized per completare l'handshake
+        initialized_msg = {
+            "jsonrpc": "2.0",
+            "method": "notifications/initialized"
+        }
+        
+        initialized_json = json.dumps(initialized_msg) + "\n"
+        self.process.stdin.write(initialized_json.encode())
+        await self.process.stdin.drain()
+        
         return response
     
     async def call_tool(self, tool_name: str, arguments: dict) -> dict:
