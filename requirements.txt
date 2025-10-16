@@ -1,2 +1,5 @@
 mcp[cli]>=1.2.0
 httpx>=0.25.0
+fastapi
+uvicorn[standard]
+python-multipart
