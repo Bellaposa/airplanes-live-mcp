@@ -64,6 +64,17 @@ class MCPStdioWrapper:
         
         return response
     
+    async def call_tool(self, tool_name: str, arguments: dict) -> dict:
+        """Chiama un tool MCP"""
+        return await self.send_request("tools/call", {
+            "name": tool_name,
+            "arguments": arguments
+        })
+    
+    async def list_tools(self) -> dict:
+        """Lista tutti i tool disponibili"""
+        return await self.send_request("tools/list")
+    
     async def cleanup(self):
         """Chiude il processo MCP"""
         if self.process and self.process.returncode is None:
