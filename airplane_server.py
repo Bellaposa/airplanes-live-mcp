@@ -302,9 +302,32 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[TextConten
             
         elif name == "military_aircraft":
             data = await make_api_request("/mil")
-            formatted = format_aircraft_data(data.get('ac', []))
-            count = len(data.get('ac', []))
-            result = f"🎖️ Found {count} military aircraft:\n\n{formatted}"
+            aircraft_list = data.get('ac', [])
+            total_count = len(aircraft_list)
+            
+            if total_count == 0:
+                result = "🎖️ No military aircraft currently tracked"
+            else:
+                # Limita a massimo 3 aeromobili per Telegram
+                limited_list = aircraft_list[:3]
+                
+                # Formato compatto per Telegram
+                aircraft_summaries = []
+                for aircraft in limited_list:
+                    callsign = aircraft.get('flight', 'Unknown').strip() or 'No callsign'
+                    hex_id = aircraft.get('hex', 'Unknown')
+                    altitude = aircraft.get('alt_baro', 'Unknown')
+                    country = aircraft.get('country', 'Unknown')
+                    
+                    summary = f"🛩️ **{callsign}** ({hex_id})\n📍 {country} | 🔺 {altitude}ft"
+                    aircraft_summaries.append(summary)
+                
+                formatted = "\n\n".join(aircraft_summaries)
+                
+                if total_count > 3:
+                    result = f"🎖️ **{total_count} military aircraft found** (showing 3):\n\n{formatted}\n\n💡 Limited view for better performance"
+                else:
+                    result = f"🎖️ **{total_count} military aircraft found**:\n\n{formatted}"
             
         elif name == "ladd_aircraft":
             data = await make_api_request("/ladd")
