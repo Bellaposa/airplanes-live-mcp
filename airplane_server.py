@@ -24,6 +24,13 @@ logger = logging.getLogger("airplane-server")
 
 # Initialize MCP server
 server = Server("airplane-tracker")
+# Provide common aliases so inspection tools (fastmcp, etc.) can find the server object.
+# Some inspectors look for variables named `mcp` or `app` — expose them as aliases.
+mcp = server
+app = server
+
+# Export names explicitly
+__all__ = ["server", "mcp", "app"]
 
 # Configuration
 API_BASE_URL = "https://api.airplanes.live/v2"
