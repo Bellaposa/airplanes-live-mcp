@@ -64,13 +64,26 @@ async def make_api_request(endpoint):
             logger.info(f"Requesting: {url}")
             response = await client.get(url)
             response.raise_for_status()
-            return response.json()
+            data = response.json()
+            logger.info(f"API Response: {data.get('total', 0)} aircraft found")
+            return data
     except httpx.HTTPStatusError as e:
-        logger.error(f"API Error {e.response.status_code}: {e}")
-        raise
+        error_msg = f"API Error {e.response.status_code}"
+        try:
+            error_detail = e.response.json()
+            error_msg += f": {error_detail}"
+        except:
+            error_msg += f": {e.response.text}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
+    except httpx.TimeoutException as e:
+        error_msg = f"Request timeout after 15s: {url}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
     except Exception as e:
-        logger.error(f"Request failed: {e}")
-        raise
+        error_msg = f"Request failed for {url}: {type(e).__name__}: {e}"
+        logger.error(error_msg)
+        raise Exception(error_msg)
 
 # === TOOLS ===
 
@@ -81,13 +94,17 @@ async def aircraft_by_hex(hex_id: str) -> str:
     Args:
         hex_id: Mode S hex ID (e.g., "347695" or "347695,34554D")
     """
-    if not hex_id.strip():
-        return "❌ Error: Hex ID is required"
-    
-    data = await make_api_request(f"/hex/{hex_id}")
-    formatted = format_aircraft_data(data.get('ac', []))
-    count = len(data.get('ac', []))
-    return f"🔍 Found {count} aircraft:\n\n{formatted}"
+    try:
+        if not hex_id.strip():
+            return "❌ Error: Hex ID is required"
+        
+        data = await make_api_request(f"/hex/{hex_id}")
+        formatted = format_aircraft_data(data.get('ac', []))
+        count = len(data.get('ac', []))
+        return f"🔍 Found {count} aircraft:\n\n{formatted}"
+    except Exception as e:
+        logger.error(f"Error in aircraft_by_hex: {e}")
+        return f"❌ Error searching hex {hex_id}: {str(e)}"
 
 @mcp.tool()
 async def aircraft_by_callsign(callsign: str) -> str:
@@ -96,13 +113,17 @@ async def aircraft_by_callsign(callsign: str) -> str:
     Args:
         callsign: Aircraft callsign (e.g., "VLG32QU" or "AFR1234,BAW456")
     """
-    if not callsign.strip():
-        return "❌ Error: Callsign is required"
-    
-    data = await make_api_request(f"/callsign/{callsign}")
-    formatted = format_aircraft_data(data.get('ac', []))
-    count = len(data.get('ac', []))
-    return f"🔍 Found {count} aircraft:\n\n{formatted}"
+    try:
+        if not callsign.strip():
+            return "❌ Error: Callsign is required"
+        
+        data = await make_api_request(f"/callsign/{callsign}")
+        formatted = format_aircraft_data(data.get('ac', []))
+        count = len(data.get('ac', []))
+        return f"🔍 Found {count} aircraft:\n\n{formatted}"
+    except Exception as e:
+        logger.error(f"Error in aircraft_by_callsign: {e}")
+        return f"❌ Error searching callsign {callsign}: {str(e)}"
 
 @mcp.tool()
 async def aircraft_by_registration(reg: str) -> str:
