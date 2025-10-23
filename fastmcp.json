@@ -1,1 +1,1 @@
-{"entrypoint": "airplane_server.py:server"}
+{"entrypoint": "airplane_server_fastmcp.py:mcp"}
