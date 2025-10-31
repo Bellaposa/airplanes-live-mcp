@@ -73,13 +73,18 @@ def format_aircraft_data(aircraft_data):
     separator = "\n" + "─" * 50 + "\n"
     return separator.join(formatted)
 
-async def make_api_request(endpoint):
+async def make_api_request(endpoint, method="GET", data=None):
     """Make HTTP request to airplane API."""
     try:
         async with httpx.AsyncClient(timeout=15) as client:
-            url = f"{API_BASE_URL}{endpoint}"
-            logger.info(f"Requesting: {url}")
-            response = await client.get(url)
+            url = f"{API_BASE_URL}{endpoint}" if endpoint.startswith("/") else endpoint
+            logger.info(f"Requesting {method}: {url}")
+            
+            if method == "POST":
+                response = await client.post(url, json=data)
+            else:
+                response = await client.get(url)
+            
             response.raise_for_status()
             return response.json()
     except httpx.HTTPStatusError as e:
@@ -87,6 +92,21 @@ async def make_api_request(endpoint):
         raise
     except Exception as e:
         logger.error(f"Request failed: {e}")
+        raise
+
+async def get_flight_schedules(icao_codes: list):
+    """Get flight schedules from airplanes.live schedules endpoint."""
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            url = "https://api.airplanes.live/schedules"
+            payload = {"schedules": [{"icao": code} for code in icao_codes]}
+            logger.info(f"Requesting schedules for: {icao_codes}")
+            
+            response = await client.post(url, json=payload)
+            response.raise_for_status()
+            return response.json()
+    except Exception as e:
+        logger.error(f"Schedule request failed: {e}")
         raise
 
 # === MCP TOOLS ===
@@ -210,6 +230,20 @@ async def handle_list_tools() -> list[Tool]:
             inputSchema={
                 "type": "object",
                 "properties": {}
+            }
+        ),
+        Tool(
+            name="flight_schedules",
+            description="Get flight schedule information (departure/arrival times, airports) for aircraft by hex code",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "hex_codes": {
+                        "type": "string",
+                        "description": "Comma-separated hex codes (e.g., '4BB0EC,45211E')"
+                    }
+                },
+                "required": ["hex_codes"]
             }
         )
     ]
@@ -340,6 +374,44 @@ async def handle_call_tool(name: str, arguments: dict | None) -> list[TextConten
             formatted = format_aircraft_data(data.get('ac', []))
             count = len(data.get('ac', []))
             result = f"🛡️ Found {count} PIA aircraft:\n\n{formatted}"
+            
+        elif name == "flight_schedules":
+            hex_codes_str = arguments.get("hex_codes", "").strip()
+            if not hex_codes_str:
+                return [TextContent(type="text", text="❌ Error: hex_codes is required")]
+            
+            # Parse comma-separated hex codes
+            hex_codes = [code.strip().upper() for code in hex_codes_str.split(",")]
+            
+            try:
+                schedules = await get_flight_schedules(hex_codes)
+                
+                if not schedules:
+                    result = "📅 No schedule information found"
+                else:
+                    # Format schedule data
+                    schedule_info = []
+                    for sched in schedules:
+                        info = []
+                        if sched.get('hex'):
+                            info.append(f"🔖 Hex: {sched['hex']}")
+                        if sched.get('dI'):
+                            info.append(f"✈️ Departure Airport: {sched['dI']}")
+                        if sched.get('aI'):
+                            info.append(f"🛬 Arrival Airport: {sched['aI']}")
+                        if sched.get('dT'):
+                            info.append(f"⏰ Departure Time: {sched['dT']}")
+                        if sched.get('aT'):
+                            info.append(f"⏱️ Arrival Time: {sched['aT']}")
+                        
+                        if info:
+                            schedule_info.append("\n".join(info))
+                    
+                    separator = "\n" + "─" * 50 + "\n"
+                    formatted_schedules = separator.join(schedule_info)
+                    result = f"📅 Found {len(schedules)} flight schedule(s):\n\n{formatted_schedules}"
+            except Exception as e:
+                return [TextContent(type="text", text=f"❌ Error fetching schedules: {str(e)}")]
             
         else:
             return [TextContent(type="text", text=f"❌ Unknown tool: {name}")]
