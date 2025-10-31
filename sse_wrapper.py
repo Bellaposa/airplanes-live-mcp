@@ -377,6 +377,20 @@ async def get_aircraft_near_position(latitude: float, longitude: float, radius: 
         return {"error": str(e)}
 
 
+@app.get("/api/aircraft/near/{latitude}/{longitude}/{radius}")
+async def get_aircraft_near_position_with_radius(latitude: float, longitude: float, radius: int):
+    """Ricerca aeromobili vicini a una posizione con raggio nel path - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_near_position", {
+            "latitude": str(latitude),
+            "longitude": str(longitude), 
+            "radius": str(radius)
+        })
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
 @app.get("/api/aircraft/airport/{airport_code}")
 async def get_aircraft_by_airport(airport_code: str):
     """Ricerca aeromobili per aeroporto - endpoint GET per n8n (deprecato)"""
