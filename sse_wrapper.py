@@ -398,34 +398,6 @@ async def get_military_aircraft():
         return {"error": str(e)}
 
 
-@app.get("/api/aircraft/near/{latitude}/{longitude}")
-async def get_aircraft_near_position(latitude: float, longitude: float, radius: int = 250):
-    """Ricerca aeromobili vicini a una posizione - endpoint GET per n8n"""
-    try:
-        result = await mcp_wrapper.call_tool("aircraft_near_position", {
-            "latitude": str(latitude),
-            "longitude": str(longitude), 
-            "radius": str(radius)
-        })
-        return result
-    except Exception as e:
-        return {"error": str(e)}
-
-
-@app.get("/api/aircraft/near/{latitude}/{longitude}/{radius}")
-async def get_aircraft_near_position_with_radius(latitude: float, longitude: float, radius: int):
-    """Ricerca aeromobili vicini a una posizione con raggio nel path - endpoint GET per n8n"""
-    try:
-        result = await mcp_wrapper.call_tool("aircraft_near_position", {
-            "latitude": str(latitude),
-            "longitude": str(longitude), 
-            "radius": str(radius)
-        })
-        return result
-    except Exception as e:
-        return {"error": str(e)}
-
-
 @app.get("/api/aircraft/near/city/{city_name}")
 async def get_aircraft_near_city(city_name: str, radius: int = 50):
     """
@@ -460,6 +432,34 @@ async def get_aircraft_near_city(city_name: str, radius: int = 50):
         return result
     except HTTPException as e:
         return {"error": e.detail}
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/near/{latitude}/{longitude}/{radius}")
+async def get_aircraft_near_position_with_radius(latitude: float, longitude: float, radius: int):
+    """Ricerca aeromobili vicini a una posizione con raggio nel path - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_near_position", {
+            "latitude": str(latitude),
+            "longitude": str(longitude), 
+            "radius": str(radius)
+        })
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/near/{latitude}/{longitude}")
+async def get_aircraft_near_position(latitude: float, longitude: float, radius: int = 250):
+    """Ricerca aeromobili vicini a una posizione - endpoint GET per n8n"""
+    try:
+        result = await mcp_wrapper.call_tool("aircraft_near_position", {
+            "latitude": str(latitude),
+            "longitude": str(longitude), 
+            "radius": str(radius)
+        })
+        return result
     except Exception as e:
         return {"error": str(e)}
 
