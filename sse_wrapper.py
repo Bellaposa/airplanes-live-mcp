@@ -3,12 +3,18 @@ import json
 import os
 import httpx
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 from typing import AsyncIterator
+from datetime import datetime
 
 app = FastAPI(title="Airplanes Live MCP SSE Wrapper")
+
+# Variabile globale per memorizzare l'ultimo run del cron
+cron_last_run = None
+cron_run_count = 0
+cron_task = None
 
 # Configurazione CORS per Supergateway
 app.add_middleware(
@@ -22,10 +28,6 @@ app.add_middleware(
 # === GEOCODING UTILITY ===
 
 async def geocode_city(city_name: str) -> tuple[float, float]:
-    """
-    Converte nome città in coordinate usando Nominatim API (OpenStreetMap)
-    Returns: (latitude, longitude)
-    """
     async with httpx.AsyncClient(timeout=10) as client:
         url = "https://nominatim.openstreetmap.org/search"
         params = {
@@ -34,7 +36,7 @@ async def geocode_city(city_name: str) -> tuple[float, float]:
             "limit": 1
         }
         headers = {
-            "User-Agent": "AirplanesLiveMCP/1.0"
+            "User-Agent": "OZiUserAgent/1.0"
         }
         
         try:
@@ -54,16 +56,13 @@ async def geocode_city(city_name: str) -> tuple[float, float]:
 
 # === MCP WRAPPER ===
 
-class MCPStdioWrapper:
-    """Wrapper che converte comunicazioni stdio MCP in SSE"""
-    
+class MCPStdioWrapper:    
     def __init__(self):
         self.process = None
         self.request_id = 0
         self.initialized = False
     
     async def start_mcp_server(self):
-        """Avvia il processo del server MCP"""
         python_path = os.environ.get("PYTHON_PATH", "python")
         script_path = os.environ.get("MCP_SCRIPT_PATH", "airplane_server.py")
         
@@ -502,6 +501,96 @@ async def debug_tool_call(tool_name: str):
         }
     except Exception as e:
         return {"error": f"Debug tool call failed: {str(e)}"}
+
+
+# === CRON INTERNO ===
+
+async def cron_job_task():
+    global cron_last_run, cron_run_count
+    
+    while True:
+        try:
+            # Attendi 14 minuti (840 secondi)
+            await asyncio.sleep(840)
+            
+            # Esegui il lavoro
+            current_time = datetime.now()
+            cron_run_count += 1
+            cron_last_run = current_time.isoformat()
+            
+            # Chiama l'endpoint health per mantenere il servizio attivo
+            print(f"[CRON] Esecuzione #{cron_run_count} alle {cron_last_run}")
+            health_response = await health_check()
+            print(f"[CRON] Health check: {health_response.get('status', 'unknown')}")
+            print(f"[CRON] Task completato con successo")
+                
+        except asyncio.CancelledError:
+            print("[CRON] Task cancellato")
+            break
+        except Exception as e:
+            print(f"[CRON] Errore critico: {e}")
+            await asyncio.sleep(60)  # Riprova dopo 1 minuto in caso di errore
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Avvia il cron job all'avvio dell'applicazione"""
+    global cron_task, cron_last_run
+    
+    cron_last_run = datetime.now().isoformat()
+    print(f"[CRON] Avvio task periodico (ogni 14 minuti) - Start time: {cron_last_run}")
+    
+    # Crea il task in background
+    cron_task = asyncio.create_task(cron_job_task())
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Ferma il cron job quando l'app viene chiusa"""
+    global cron_task
+    
+    if cron_task:
+        print("[CRON] Arresto task periodico")
+        cron_task.cancel()
+        try:
+            await cron_task
+        except asyncio.CancelledError:
+            pass
+
+
+@app.get("/api/cron/status")
+async def get_cron_status():
+    """Endpoint per controllare lo stato del cron job"""
+    return JSONResponse({
+        "active": cron_task is not None and not cron_task.done(),
+        "last_run": cron_last_run,
+        "run_count": cron_run_count,
+        "interval_minutes": 14,
+        "next_run_in_seconds": 840 if cron_last_run else None
+    })
+
+
+@app.post("/api/cron/trigger")
+async def trigger_cron_manually():
+    """Endpoint per triggare manualmente il cron job (per testing)"""
+    global cron_last_run, cron_run_count
+    
+    try:
+        current_time = datetime.now()
+        cron_run_count += 1
+        cron_last_run = current_time.isoformat()
+        
+        # Chiama l'endpoint health
+        health_response = await health_check()
+        
+        return JSONResponse({
+            "status": "success",
+            "triggered_at": cron_last_run,
+            "run_count": cron_run_count,
+            "health_check": health_response
+        })
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Cron trigger failed: {str(e)}")
 
 
 if __name__ == "__main__":
