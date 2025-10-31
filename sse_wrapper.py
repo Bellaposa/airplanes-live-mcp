@@ -1,7 +1,8 @@
 import asyncio
 import json
 import os
-from fastapi import FastAPI, Request
+import httpx
+from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
@@ -17,6 +18,41 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# === GEOCODING UTILITY ===
+
+async def geocode_city(city_name: str) -> tuple[float, float]:
+    """
+    Converte nome città in coordinate usando Nominatim API (OpenStreetMap)
+    Returns: (latitude, longitude)
+    """
+    async with httpx.AsyncClient(timeout=10) as client:
+        url = "https://nominatim.openstreetmap.org/search"
+        params = {
+            "q": city_name,
+            "format": "json",
+            "limit": 1
+        }
+        headers = {
+            "User-Agent": "AirplanesLiveMCP/1.0"
+        }
+        
+        try:
+            response = await client.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            data = response.json()
+            
+            if not data:
+                raise HTTPException(status_code=404, detail=f"City '{city_name}' not found")
+            
+            lat = float(data[0]["lat"])
+            lon = float(data[0]["lon"])
+            return lat, lon
+            
+        except httpx.HTTPError as e:
+            raise HTTPException(status_code=500, detail=f"Geocoding error: {str(e)}")
+
+# === MCP WRAPPER ===
 
 class MCPStdioWrapper:
     """Wrapper che converte comunicazioni stdio MCP in SSE"""
@@ -387,6 +423,44 @@ async def get_aircraft_near_position_with_radius(latitude: float, longitude: flo
             "radius": str(radius)
         })
         return result
+    except Exception as e:
+        return {"error": str(e)}
+
+
+@app.get("/api/aircraft/near/city/{city_name}")
+async def get_aircraft_near_city(city_name: str, radius: int = 50):
+    """
+    Ricerca aeromobili vicini a una città specificata per nome
+    
+    Esempi:
+    - /api/aircraft/near/city/Rome
+    - /api/aircraft/near/city/New York?radius=100
+    - /api/aircraft/near/city/London?radius=75
+    
+    Il sistema converte automaticamente il nome della città in coordinate GPS
+    """
+    try:
+        # Geocode city name to coordinates
+        lat, lon = await geocode_city(city_name)
+        
+        # Call MCP tool with coordinates
+        result = await mcp_wrapper.call_tool("aircraft_near_position", {
+            "latitude": str(lat),
+            "longitude": str(lon), 
+            "radius": str(radius)
+        })
+        
+        # Add geocoding info to response
+        if "result" in result:
+            result["geocoding"] = {
+                "city": city_name,
+                "latitude": lat,
+                "longitude": lon
+            }
+        
+        return result
+    except HTTPException as e:
+        return {"error": e.detail}
     except Exception as e:
         return {"error": str(e)}
 
