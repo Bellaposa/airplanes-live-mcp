@@ -3,7 +3,7 @@ import json
 import os
 import httpx
 from fastapi import FastAPI, Request, HTTPException
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.responses import StreamingResponse, JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import subprocess
 from typing import AsyncIterator
@@ -269,16 +269,19 @@ async def list_tools():
 async def root():
     return {
         "service": "Airplanes Live MCP SSE Wrapper",
-        "version": "1.0.0",
-        "endpoints": {
-            "sse": "/sse",
-            "health": "/health",
-            "tools_list": "/mcp/tools/list",
-            "call_tool": "/mcp/tools/call"
-        },
-        "repository": "https://github.com/Bellaposa/airplanes-live-mcp",
-        "usage": "Connect Supergateway to /sse endpoint"
+        "version": "1.2.0"
     }
+
+
+@app.get("/webapp")
+async def serve_webapp():
+    """Serve la Telegram Web App"""
+    webapp_path = os.path.join(os.path.dirname(__file__), "telegram-webapp.html")
+    if os.path.exists(webapp_path):
+        return FileResponse(webapp_path, media_type="text/html")
+    else:
+        return {"error": "Web App not found. Please deploy telegram-webapp.html"}
+
 
 
 # Endpoint semplificati per n8n
